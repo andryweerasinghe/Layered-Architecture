@@ -14,7 +14,8 @@ import com.example.layeredarchitecture.model.ItemDTO;
 import java.sql.*;
 import java.util.ArrayList;
 
-public class ItemDAOImpl {
+public class ItemDAOImpl implements ItemDAO{
+    @Override
     public ArrayList<ItemDTO> getAllItems() throws SQLException, ClassNotFoundException {
         Connection connection = DBConnection.getDbConnection().getConnection();
         Statement statement = connection.createStatement();
@@ -27,12 +28,14 @@ public class ItemDAOImpl {
         }
         return itemDTOArrayList;
     }
+    @Override
     public boolean delete(String code) throws SQLException, ClassNotFoundException {
         Connection connection = DBConnection.getDbConnection().getConnection();
         PreparedStatement preparedStatement = connection.prepareStatement("DELETE FROM Item WHERE code=?");
         preparedStatement.setString(1, code);
         return preparedStatement.executeUpdate()>0;
     }
+    @Override
     public boolean update(ItemDTO itemDTO) throws SQLException, ClassNotFoundException {
         Connection connection = DBConnection.getDbConnection().getConnection();
         PreparedStatement preparedStatement = connection.prepareStatement("UPDATE Item SET description=?, unitPrice=?, qtyOnHand=? WHERE code=?");
@@ -42,6 +45,7 @@ public class ItemDAOImpl {
         preparedStatement.setString(4, itemDTO.getCode());
         return preparedStatement.executeUpdate()>0;
     }
+    @Override
     public boolean isExistItem(String code) throws SQLException, ClassNotFoundException {
         Connection connection = DBConnection.getDbConnection().getConnection();
         PreparedStatement preparedStatement = connection.prepareStatement("SELECT code FROM Item WHERE code=?");
@@ -49,6 +53,7 @@ public class ItemDAOImpl {
         return preparedStatement.executeQuery().next();
 
     }
+    @Override
     public boolean save(ItemDTO itemDTO) throws SQLException, ClassNotFoundException {
         Connection connection = DBConnection.getDbConnection().getConnection();
         PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO Item (code, description, unitPrice, qtyOnHand) VALUES (?,?,?,?)");
@@ -58,6 +63,7 @@ public class ItemDAOImpl {
         preparedStatement.setInt(4, itemDTO.getQtyOnHand());
         return preparedStatement.executeUpdate()>0;
     }
+    @Override
     public String generateNewId() throws SQLException, ClassNotFoundException {
         Connection connection = DBConnection.getDbConnection().getConnection();
         ResultSet resultSet = connection.createStatement().executeQuery("SELECT code FROM Item ORDER BY code DESC LIMIT 1");
