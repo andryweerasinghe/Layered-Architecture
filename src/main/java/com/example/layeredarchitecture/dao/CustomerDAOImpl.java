@@ -26,13 +26,47 @@ public class CustomerDAOImpl {
         }
         return customerDTOArrayList;
     }
-    public void save(CustomerDTO customerDTO) throws SQLException, ClassNotFoundException {
+    public boolean save(CustomerDTO customerDTO) throws SQLException, ClassNotFoundException {
         Connection connection = DBConnection.getDbConnection().getConnection();
         PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO Customer (id, name, address) VALUES (?,?,?)");
         preparedStatement.setString(1, customerDTO.getId());
         preparedStatement.setString(2, customerDTO.getName());
         preparedStatement.setString(3, customerDTO.getAddress());
 
+        return preparedStatement.executeUpdate()> 0;
+
+    }
+    public void update(CustomerDTO customerDTO) throws SQLException, ClassNotFoundException {
+        Connection connection = DBConnection.getDbConnection().getConnection();
+        PreparedStatement preparedStatement = connection.prepareStatement("UPDATE Customer SET name=?, address=? WHERE id=?");
+        preparedStatement.setString(1, customerDTO.getName());
+        preparedStatement.setString(2, customerDTO.getAddress());
+        preparedStatement.setString(3, customerDTO.getId());
+
         preparedStatement.executeUpdate();
+    }
+    public boolean isExistCustomer(String id) throws SQLException, ClassNotFoundException {
+        Connection connection = DBConnection.getDbConnection().getConnection();
+        PreparedStatement preparedStatement = connection.prepareStatement("SELECT id FROM Customer WHERE id=?");
+        preparedStatement.setString(1, id);
+        return preparedStatement.executeQuery().next();
+
+    }
+    public boolean delete(String id) throws SQLException, ClassNotFoundException {
+        Connection connection = DBConnection.getDbConnection().getConnection();
+        PreparedStatement preparedStatement = connection.prepareStatement("DELETE FROM Customer WHERE id=?");
+        preparedStatement.setString(1, id);
+        return preparedStatement.executeUpdate()>0;
+    }
+    public String generateNewId() throws SQLException, ClassNotFoundException {
+        Connection connection = DBConnection.getDbConnection().getConnection();
+        ResultSet resultSet = connection.createStatement().executeQuery("SELECT id FROM Customer ORDER BY id DESC LIMIT 1");
+        if (resultSet.next()) {
+            String id = resultSet.getString("id");
+            int newCustomerId = Integer.parseInt(id.replace("C00-", "")) + 1;
+            return String.format("C00-%03d", newCustomerId);
+        } else {
+            return "C00-001";
+        }
     }
 }
