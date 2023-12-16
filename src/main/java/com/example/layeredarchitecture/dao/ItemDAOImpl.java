@@ -13,6 +13,7 @@ import com.example.layeredarchitecture.model.ItemDTO;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.List;
 
 public class ItemDAOImpl implements ItemDAO{
     @Override
@@ -85,5 +86,16 @@ public class ItemDAOImpl implements ItemDAO{
             return new ItemDTO(resultSet.getString("code"), resultSet.getString("description"), resultSet.getBigDecimal("unitPrice"), resultSet.getInt("qtyOnHand"));
         }
         return null;
+    }
+    public List<String> loadAllItemCodes() throws SQLException, ClassNotFoundException {
+        List<String> itemCodes = new ArrayList<>();
+        Connection connection = DBConnection.getDbConnection().getConnection();
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery("SELECT * FROM Item");
+        while (resultSet.next()){
+            String code = resultSet.getString("code");
+            itemCodes.add(code);
+        }
+        return itemCodes;
     }
 }

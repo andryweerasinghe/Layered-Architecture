@@ -5,6 +5,7 @@ import com.example.layeredarchitecture.model.ItemDTO;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.List;
 
 public interface ItemDAO {
     public ArrayList<ItemDTO> getAllItems() throws SQLException, ClassNotFoundException;
@@ -14,4 +15,5 @@ public interface ItemDAO {
     public boolean save(ItemDTO itemDTO) throws SQLException, ClassNotFoundException;
     public String generateNewId() throws SQLException, ClassNotFoundException;
     public ItemDTO findItem(String code) throws SQLException, ClassNotFoundException;
+    public List<String> loadAllItemCodes() throws SQLException, ClassNotFoundException;
 }

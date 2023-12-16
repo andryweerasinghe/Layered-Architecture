@@ -1,9 +1,6 @@
 package com.example.layeredarchitecture.controller;
 
-import com.example.layeredarchitecture.dao.CustomerDAO;
-import com.example.layeredarchitecture.dao.CustomerDAOImpl;
-import com.example.layeredarchitecture.dao.ItemDAO;
-import com.example.layeredarchitecture.dao.ItemDAOImpl;
+import com.example.layeredarchitecture.dao.*;
 import com.example.layeredarchitecture.db.DBConnection;
 import com.example.layeredarchitecture.model.CustomerDTO;
 import com.example.layeredarchitecture.model.ItemDTO;
@@ -29,6 +26,7 @@ import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.*;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -53,6 +51,7 @@ public class PlaceOrderFormController {
 
     CustomerDAO customerDAO = new CustomerDAOImpl();
     ItemDAO itemDAO = new ItemDAOImpl();
+    OrderDAO orderDAO = new OrderDAOImpl();
 
     public void initialize() throws SQLException, ClassNotFoundException {
 
@@ -76,7 +75,7 @@ public class PlaceOrderFormController {
             return new ReadOnlyObjectWrapper<>(btnDelete);
         });
 
-        orderId = generateNewOrderId();
+        orderId = orderDAO.generateNewOrderId();
         lblId.setText("Order ID: " + orderId);
         lblDate.setText(LocalDate.now().toString());
         btnPlaceOrder.setDisable(true);
@@ -172,58 +171,11 @@ public class PlaceOrderFormController {
             }
 
         });
-
-        loadAllCustomerIds();
-        loadAllItemCodes();
+        List<String> customerIds = customerDAO.loadAllCustomerIds();
+        cmbCustomerId.getItems().addAll(customerIds);
+        List<String> itemCodes = itemDAO.loadAllItemCodes();
+        cmbItemCode.getItems().addAll(itemCodes);
     }
-    public String generateNewOrderId() {
-        try {
-            Connection connection = DBConnection.getDbConnection().getConnection();
-            Statement stm = connection.createStatement();
-            ResultSet rst = stm.executeQuery("SELECT oid FROM `Orders` ORDER BY oid DESC LIMIT 1;");
-
-            return rst.next() ? String.format("OID-%03d", (Integer.parseInt(rst.getString("oid").replace("OID-", "")) + 1)) : "OID-001";
-        } catch (SQLException e) {
-            new Alert(Alert.AlertType.ERROR, "Failed to generate a new order id").show();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        return "OID-001";
-    }
-
-    private void loadAllCustomerIds() {
-        try {
-            Connection connection = DBConnection.getDbConnection().getConnection();
-            Statement stm = connection.createStatement();
-            ResultSet rst = stm.executeQuery("SELECT * FROM Customer");
-
-            while (rst.next()) {
-                cmbCustomerId.getItems().add(rst.getString("id"));
-            }
-
-        } catch (SQLException e) {
-            new Alert(Alert.AlertType.ERROR, "Failed to load customer ids").show();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void loadAllItemCodes() {
-        try {
-            /*Get all items*/
-            Connection connection = DBConnection.getDbConnection().getConnection();
-            Statement stm = connection.createStatement();
-            ResultSet rst = stm.executeQuery("SELECT * FROM Item");
-            while (rst.next()) {
-                cmbItemCode.getItems().add(rst.getString("code"));
-            }
-        } catch (SQLException e) {
-            new Alert(Alert.AlertType.ERROR, e.getMessage()).show();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-    }
-
     @FXML
     private void navigateToHome(MouseEvent event) throws IOException {
         URL resource = this.getClass().getResource("/com/example/layeredarchitecture/main-form.fxml");
@@ -300,7 +252,11 @@ public class PlaceOrderFormController {
             new Alert(Alert.AlertType.ERROR, "Order has not been placed successfully").show();
         }
 
-        orderId = generateNewOrderId();
+        try {
+            orderId = orderDAO.generateNewOrderId();
+        } catch (SQLException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
         lblId.setText("Order Id: " + orderId);
         cmbCustomerId.getSelectionModel().clearSelection();
         cmbItemCode.getSelectionModel().clearSelection();
@@ -348,16 +304,12 @@ public class PlaceOrderFormController {
                 }
 
 //                //Search & Update Item
-                ItemDTO item = findItem(detail.getItemCode());
+                ItemDTO item = itemDAO.findItem(detail.getItemCode());
                 item.setQtyOnHand(item.getQtyOnHand() - detail.getQty());
 
-                PreparedStatement pstm = connection.prepareStatement("UPDATE Item SET description=?, unitPrice=?, qtyOnHand=? WHERE code=?");
-                pstm.setString(1, item.getDescription());
-                pstm.setBigDecimal(2, item.getUnitPrice());
-                pstm.setInt(3, item.getQtyOnHand());
-                pstm.setString(4, item.getCode());
+                boolean updated = itemDAO.update(item);
 
-                if (!(pstm.executeUpdate() > 0)) {
+                if (!updated) {
                     connection.rollback();
                     connection.setAutoCommit(true);
                     return false;
@@ -375,23 +327,4 @@ public class PlaceOrderFormController {
         }
         return false;
     }
-
-
-    public ItemDTO findItem(String code) {
-        try {
-            Connection connection = DBConnection.getDbConnection().getConnection();
-            PreparedStatement pstm = connection.prepareStatement("SELECT * FROM Item WHERE code=?");
-            pstm.setString(1, code);
-            ResultSet rst = pstm.executeQuery();
-            rst.next();
-            return new ItemDTO(code, rst.getString("description"), rst.getBigDecimal("unitPrice"), rst.getInt("qtyOnHand"));
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to find the Item " + code, e);
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-
 }

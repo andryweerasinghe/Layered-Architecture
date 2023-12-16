@@ -5,6 +5,7 @@ import com.example.layeredarchitecture.model.CustomerDTO;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.List;
 
 public interface CustomerDAO {
     ArrayList<CustomerDTO> getAllCustomers() throws SQLException, ClassNotFoundException;
@@ -13,6 +14,8 @@ public interface CustomerDAO {
     boolean isExistCustomer(String id) throws SQLException, ClassNotFoundException;
     boolean delete(String id) throws SQLException, ClassNotFoundException;
     String generateNewId() throws SQLException, ClassNotFoundException;
-    public CustomerDTO Search(String id) throws SQLException, ClassNotFoundException;
-
+    CustomerDTO Search(String id) throws SQLException, ClassNotFoundException;
+    List<String> loadAllCustomerIds() throws SQLException, ClassNotFoundException;
 }
+
+

@@ -12,6 +12,7 @@ import com.example.layeredarchitecture.model.CustomerDTO;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.List;
 
 public class CustomerDAOImpl implements CustomerDAO{
     @Override
@@ -84,5 +85,17 @@ public class CustomerDAOImpl implements CustomerDAO{
             return new CustomerDTO(resultSet.getString("id"), resultSet.getString("name"), resultSet.getString("address"));
         }
         return null;
+    }
+    public List<String> loadAllCustomerIds() throws SQLException, ClassNotFoundException {
+        List<String> customerIds = new ArrayList<>();
+        Connection connection = DBConnection.getDbConnection().getConnection();
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery("SELECT * FROM Customer");
+
+        while (resultSet.next()){
+            String id = resultSet.getString("id");
+            customerIds.add(id);
+        }
+        return customerIds;
     }
 }
