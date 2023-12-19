@@ -70,7 +70,7 @@ public class ManageItemsFormController {
     private void loadAllItems() {
         tblItems.getItems().clear();
         try {
-            ArrayList<ItemDTO> allItems = itemDAO.getAllItems();
+            ArrayList<ItemDTO> allItems = itemDAO.getAll();
             for (ItemDTO itemDTO:allItems){
                 tblItems.getItems().add(new ItemTM(itemDTO.getCode(), itemDTO.getDescription(), itemDTO.getUnitPrice(), itemDTO.getQtyOnHand()));
             }
@@ -131,7 +131,7 @@ public class ManageItemsFormController {
         /*Delete Item*/
         String code = tblItems.getSelectionModel().getSelectedItem().getCode();
         try {
-            if (!itemDAO.isExistItem(code)) {
+            if (!itemDAO.isExist(code)) {
                 new Alert(Alert.AlertType.ERROR, "There is no such item associated with the id " + code).show();
             }
             boolean deleted = itemDAO.delete(code);
@@ -172,7 +172,7 @@ public class ManageItemsFormController {
 
         if (btnSave.getText().equalsIgnoreCase("save")) {
             try {
-                if (itemDAO.isExistItem(code)) {
+                if (itemDAO.isExist(code)) {
                     new Alert(Alert.AlertType.ERROR, code + " already exists").show();
                 }
                 ItemDTO itemDTO = new ItemDTO(code, description, unitPrice, qtyOnHand);
@@ -189,7 +189,7 @@ public class ManageItemsFormController {
             }
         } else {
             try {
-                if (!itemDAO.isExistItem(code)) {
+                if (!itemDAO.isExist(code)) {
                     new Alert(Alert.AlertType.ERROR, "There is no such item associated with the id " + code).show();
                 }
                 /*Update Item*/

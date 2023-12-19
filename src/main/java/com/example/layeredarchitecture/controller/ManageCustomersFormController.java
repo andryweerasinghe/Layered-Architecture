@@ -71,7 +71,7 @@ public class ManageCustomersFormController {
         tblCustomers.getItems().clear();
         /*Get all customers*/
         try {
-            ArrayList<CustomerDTO> allCustomers = customerDAO.getAllCustomers();
+            ArrayList<CustomerDTO> allCustomers = customerDAO.getAll();
             for (CustomerDTO customerDTO:allCustomers){
                 tblCustomers.getItems().add(new CustomerTM(customerDTO.getId(), customerDTO.getName(), customerDTO.getAddress()));
             }
@@ -134,7 +134,7 @@ public class ManageCustomersFormController {
         if (btnSave.getText().equalsIgnoreCase("save")) {
             /*Save Customer*/
             try {
-                if (customerDAO.isExistCustomer(id)) {
+                if (customerDAO.isExist(id)) {
                     new Alert(Alert.AlertType.ERROR, id + " already exists").show();
                 }
                 CustomerDTO customerDTO = new CustomerDTO(id, name, address);
@@ -153,7 +153,7 @@ public class ManageCustomersFormController {
         } else {
             /*Update customer*/
             try {
-                if (!customerDAO.isExistCustomer(id)) {
+                if (!customerDAO.isExist(id)) {
                     new Alert(Alert.AlertType.ERROR, "There is no such customer associated with the id " + id).show();
                 }
 
@@ -178,7 +178,7 @@ public class ManageCustomersFormController {
         /*Delete Customer*/
         String id = tblCustomers.getSelectionModel().getSelectedItem().getId();
         try {
-            if (!customerDAO.isExistCustomer(id)) {
+            if (!customerDAO.isExist(id)) {
                 new Alert(Alert.AlertType.ERROR, "There is no such customer associated with the id " + id).show();
             }
 

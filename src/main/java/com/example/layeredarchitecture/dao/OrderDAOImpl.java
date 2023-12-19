@@ -7,62 +7,45 @@
 
 package com.example.layeredarchitecture.dao;
 
-import com.example.layeredarchitecture.db.DBConnection;
-import com.example.layeredarchitecture.model.OrderDetailDTO;
+import com.example.layeredarchitecture.model.OrderDTO;
 
 import java.sql.*;
-import java.time.LocalDate;
-import java.util.List;
+import java.util.ArrayList;
 
 public class OrderDAOImpl implements OrderDAO {
-    OrderDetailDAO orderDetailDAO = new OrderDetailDAOImpl();
-    ItemDAO itemDAO = new ItemDAOImpl();
     @Override
-    public String generateNewOrderId() throws SQLException, ClassNotFoundException {
-        Connection connection = DBConnection.getDbConnection().getConnection();
-        Statement statement = connection.createStatement();
-        ResultSet resultSet = statement.executeQuery("SELECT oid FROM Orders ORDER BY oid DESC LIMIT 1");
-
+    public String generateNewId() throws SQLException, ClassNotFoundException {
+        ResultSet resultSet = SQLUtil.execute("SELECT oid FROM Orders ORDER BY oid DESC LIMIT 1");
         return resultSet.next() ? String.format("OID-%03d", (Integer.parseInt(resultSet.getString("oid").replace("OID-", "")) + 1)) : "OID-001";
     }
+
     @Override
-    public boolean saveOrder(String orderId, LocalDate orderDate, String customerId, List<OrderDetailDTO> orderDetails){
-        Connection connection = null;
-        try {
-            connection = DBConnection.getDbConnection().getConnection();
-            PreparedStatement stm = connection.prepareStatement("SELECT oid FROM `Orders` WHERE oid=?");
-            stm.setString(1, orderId);
-            /*if order id already exist*/
-            if (stm.executeQuery().next()) {
+    public OrderDTO Search(String id) throws SQLException, ClassNotFoundException {
+        return null;
+    }
 
-            }
+    public boolean isExist(String orderId) throws SQLException, ClassNotFoundException {
+        ResultSet resultSet = SQLUtil.execute("SELECT oid FROM `Orders` WHERE oid=?", orderId);
+        return resultSet.next();
+    }
 
-            connection.setAutoCommit(false);
-            stm = connection.prepareStatement("INSERT INTO `Orders` (oid, date, customerID) VALUES (?,?,?)");
-            stm.setString(1, orderId);
-            stm.setDate(2, Date.valueOf(orderDate));
-            stm.setString(3, customerId);
+    @Override
+    public boolean delete(String id) throws SQLException, ClassNotFoundException {
+        return false;
+    }
 
-            if (stm.executeUpdate() != 1) {
-                connection.rollback();
-                connection.setAutoCommit(true);
-                return false;
-            }
-            boolean isOrderDetailSaved = orderDetailDAO.saveDetails(orderId,orderDetails);
-            if (isOrderDetailSaved) {
-                boolean isUpdated = itemDAO.updateItem(orderDetails);
-                if (isUpdated) {
-                    connection.commit();
-                }
-            }
-            connection.rollback();
-            connection.setAutoCommit(true);
-            return true;
+    @Override
+    public ArrayList<OrderDTO> getAll() throws SQLException, ClassNotFoundException {
+        return null;
+    }
 
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
+    @Override
+    public boolean save(OrderDTO dto) throws SQLException, ClassNotFoundException {
+        return SQLUtil.execute("INSERT INTO `Orders` (oid, date, customerID) VALUES (?,?,?)", dto.getOrderId(), Date.valueOf(dto.getOrderDate()), dto.getCustomerId());
+    }
+
+    @Override
+    public boolean update(OrderDTO customerDTO) throws SQLException, ClassNotFoundException {
+        return false;
     }
 }

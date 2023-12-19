@@ -4,6 +4,7 @@ import com.example.layeredarchitecture.dao.*;
 import com.example.layeredarchitecture.db.DBConnection;
 import com.example.layeredarchitecture.model.CustomerDTO;
 import com.example.layeredarchitecture.model.ItemDTO;
+import com.example.layeredarchitecture.model.OrderDTO;
 import com.example.layeredarchitecture.model.OrderDetailDTO;
 import com.example.layeredarchitecture.view.tdm.OrderDetailTM;
 import com.jfoenix.controls.JFXButton;
@@ -52,6 +53,7 @@ public class PlaceOrderFormController {
     CustomerDAO customerDAO = new CustomerDAOImpl();
     ItemDAO itemDAO = new ItemDAOImpl();
     OrderDAO orderDAO = new OrderDAOImpl();
+    OrderDetailDAO orderDetailDAO = new OrderDetailDAOImpl();
 
     public void initialize() throws SQLException, ClassNotFoundException {
 
@@ -75,7 +77,7 @@ public class PlaceOrderFormController {
             return new ReadOnlyObjectWrapper<>(btnDelete);
         });
 
-        orderId = orderDAO.generateNewOrderId();
+        orderId = orderDAO.generateNewId();
         lblId.setText("Order ID: " + orderId);
         lblDate.setText(LocalDate.now().toString());
         btnPlaceOrder.setDisable(true);
@@ -98,7 +100,7 @@ public class PlaceOrderFormController {
                 try {
                     /*Search Customer*/
                     try {
-                        if (!customerDAO.isExistCustomer(newValue + "")) {
+                        if (!customerDAO.isExist(newValue + "")) {
 //                            "There is no such customer associated with the id " + id
                             new Alert(Alert.AlertType.ERROR, "There is no such customer associated with the id " + newValue + "").show();
                         }
@@ -128,7 +130,7 @@ public class PlaceOrderFormController {
 
                 /*Find Item*/
                 try {
-                    if (!itemDAO.isExistItem(newItemCode + "")) {
+                    if (!itemDAO.isExist(newItemCode + "")) {
                         throw new ClassNotFoundException("There is no such item associated with the id " + (newItemCode+""));
                     }
                     ItemDTO searchedItem = itemDAO.findItem(newItemCode + "");
@@ -243,7 +245,7 @@ public class PlaceOrderFormController {
     }
 
     public void btnPlaceOrder_OnAction(ActionEvent actionEvent) {
-        boolean saved = orderDAO.saveOrder(orderId, LocalDate.now(), cmbCustomerId.getValue(),
+        boolean saved = saveOrder(orderId, LocalDate.now(), cmbCustomerId.getValue(),
                 tblOrderDetails.getItems().stream().map(tm -> new OrderDetailDTO(tm.getCode(), tm.getQty(), tm.getUnitPrice())).collect(Collectors.toList()));
 
         if (saved) {
@@ -253,7 +255,7 @@ public class PlaceOrderFormController {
         }
 
         try {
-            orderId = orderDAO.generateNewOrderId();
+            orderId = orderDAO.generateNewId();
         } catch (SQLException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -264,4 +266,81 @@ public class PlaceOrderFormController {
         txtQty.clear();
         calculateTotal();
     }
+    public boolean saveOrder(String orderId, LocalDate orderDate, String customerId, List<OrderDetailDTO> orderDetails) {
+        /*Transaction*/
+        Connection connection = null;
+        try {
+            connection=DBConnection.getDbConnection().getConnection();
+
+
+            //Check order id already exist or not
+
+
+            boolean b1 = orderDAO.isExist(orderId);
+            /*if order id already exist*/
+            if (b1) {
+                return false;
+            }
+
+
+            connection.setAutoCommit(false);
+
+
+            //Save the Order to the order table
+            System.out.println(orderId);
+            boolean b2 = orderDAO.save(new OrderDTO(orderId, orderDate, customerId));
+
+
+            if (!b2) {
+                connection.rollback();
+                connection.setAutoCommit(true);
+                return false;
+            }
+
+
+
+
+            // add data to the Order Details table
+
+
+            for (OrderDetailDTO detail : orderDetails) {
+                System.out.println(detail);
+                boolean b3 = orderDetailDAO.saveOrderDetails(orderId, detail);
+                if (!b3) {
+                    connection.rollback();
+                    connection.setAutoCommit(true);
+                    return false;
+                }
+
+
+                //Search & Update Item
+                ItemDTO item = itemDAO.findItem(detail.getItemCode());
+                item.setQtyOnHand(item.getQtyOnHand() - detail.getQty());
+
+
+                //update item
+                boolean b = itemDAO.update(new ItemDTO(item.getCode(), item.getDescription(), item.getUnitPrice(), item.getQtyOnHand()));
+
+
+                if (!b) {
+                    connection.rollback();
+                    connection.setAutoCommit(true);
+                    return false;
+                }
+            }
+
+
+            connection.commit();
+            connection.setAutoCommit(true);
+            return true;
+
+
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
 }
