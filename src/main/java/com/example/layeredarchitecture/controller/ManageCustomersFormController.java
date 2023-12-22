@@ -1,8 +1,7 @@
 package com.example.layeredarchitecture.controller;
 
-import com.example.layeredarchitecture.dao.CustomerDAO;
-import com.example.layeredarchitecture.dao.CustomerDAOImpl;
-import com.example.layeredarchitecture.db.DBConnection;
+import com.example.layeredarchitecture.bo.Custom.CustomerBo;
+import com.example.layeredarchitecture.bo.Custom.Impl.CustomerBoImpl;
 import com.example.layeredarchitecture.model.CustomerDTO;
 import com.example.layeredarchitecture.view.tdm.CustomerTM;
 import com.jfoenix.controls.JFXButton;
@@ -38,8 +37,7 @@ public class ManageCustomersFormController {
     public TextField txtCustomerAddress;
     public TableView<CustomerTM> tblCustomers;
     public JFXButton btnAddNewCustomer;
-
-    CustomerDAO customerDAO = new CustomerDAOImpl();
+    CustomerBo customerBo = new CustomerBoImpl();
 
     public void initialize() throws SQLException, ClassNotFoundException {
         tblCustomers.getColumns().get(0).setCellValueFactory(new PropertyValueFactory<>("id"));
@@ -71,7 +69,7 @@ public class ManageCustomersFormController {
         tblCustomers.getItems().clear();
         /*Get all customers*/
         try {
-            ArrayList<CustomerDTO> allCustomers = customerDAO.getAll();
+            ArrayList<CustomerDTO> allCustomers = customerBo.getAllCustomers();
             for (CustomerDTO customerDTO:allCustomers){
                 tblCustomers.getItems().add(new CustomerTM(customerDTO.getId(), customerDTO.getName(), customerDTO.getAddress()));
             }
@@ -134,11 +132,11 @@ public class ManageCustomersFormController {
         if (btnSave.getText().equalsIgnoreCase("save")) {
             /*Save Customer*/
             try {
-                if (customerDAO.isExist(id)) {
+                if (customerBo.isExistCustomer(id)) {
                     new Alert(Alert.AlertType.ERROR, id + " already exists").show();
                 }
                 CustomerDTO customerDTO = new CustomerDTO(id, name, address);
-                boolean saved = customerDAO.save(customerDTO);
+                boolean saved = customerBo.saveCustomer(customerDTO);
 
                 if (saved) {
                     tblCustomers.getItems().add(new CustomerTM(id, name, address));
@@ -153,12 +151,12 @@ public class ManageCustomersFormController {
         } else {
             /*Update customer*/
             try {
-                if (!customerDAO.isExist(id)) {
+                if (!customerBo.isExistCustomer(id)) {
                     new Alert(Alert.AlertType.ERROR, "There is no such customer associated with the id " + id).show();
                 }
 
                 CustomerDTO customerDTO = new CustomerDTO(id, name, address);
-                customerDAO.update(customerDTO);
+                customerBo.updateCustomer(customerDTO);
 
             } catch (SQLException e) {
                 new Alert(Alert.AlertType.ERROR, "Failed to update the customer " + id + e.getMessage()).show();
@@ -178,11 +176,11 @@ public class ManageCustomersFormController {
         /*Delete Customer*/
         String id = tblCustomers.getSelectionModel().getSelectedItem().getId();
         try {
-            if (!customerDAO.isExist(id)) {
+            if (!customerBo.isExistCustomer(id)) {
                 new Alert(Alert.AlertType.ERROR, "There is no such customer associated with the id " + id).show();
             }
 
-            boolean deleted = customerDAO.delete(id);
+            boolean deleted = customerBo.deleteCustomer(id);
             if (deleted) {
                 tblCustomers.getItems().remove(tblCustomers.getSelectionModel().getSelectedItem());
                 tblCustomers.getSelectionModel().clearSelection();
@@ -197,7 +195,7 @@ public class ManageCustomersFormController {
     }
     private String generateNewId() {
         try {
-            return customerDAO.generateNewId();
+            return customerBo.generateNewCustomerId();
         } catch (SQLException e) {
             new Alert(Alert.AlertType.ERROR, "Failed to generate a new id " + e.getMessage()).show();
         } catch (ClassNotFoundException e) {
